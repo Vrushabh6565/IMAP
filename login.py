@@ -1,6 +1,11 @@
 from folders import *
 from os import system
+from socket import *
+import ssl
+from colorama import *
+import base64
 clear = lambda: system('clear')
+
 s = socket(AF_INET, SOCK_STREAM)
 s = ssl.wrap_socket(s, ssl_version=ssl.PROTOCOL_SSLv23)
 
@@ -60,7 +65,6 @@ def print_dict(dict):
 
 def authenticated_state():
     folder_dict = MAILBOX()
-    print(folder_dict)
     folder_dict['X'] = ' LOGOUT'
     print_dict(folder_dict)
     print("\n\n")
@@ -71,6 +75,8 @@ def authenticated_state():
 
 
 def select_folder(select, folder_dict):
+    if(select == "X"):
+        return logout(s)
     query = "a001 Select{0}\r\n".format(folder_dict.get(select))
     query = bytes(query, 'utf-8')
     try:
@@ -81,30 +87,33 @@ def select_folder(select, folder_dict):
         print("UNABLE TO FETCH ",folder_dict.get(select),"\n")
         return None
 
+def get_uid_list():
+    UIDS = "a001 UID SEARCH ALL\r\n"
+    UIDS = bytes(UIDS, 'utf-8')
+    s.send(UIDS)
+    all_uids = s.recv(4096).decode()
+    while (True):
+        if ('a001 OK' in all_uids):
+            break
+        elif ('a001 NO' in all_uids or 'a001 BAD' in all_uids):
+            print("1. UNABLE TO FETCH\n")
+            return None
+        all_uids += s.recv(4096).decode()
+    list = all_uids.split("\r\n")
+    list = list[0].split(" ")
+    list = list[2:]
+    return list
 
 def open_folder(folder_name, resp):
     #clear()
     resp = resp.decode()
     list = resp.split("\r\n")
     if ('NO' in list[-2] or 'BAD' in list[-2]):
-        print("UNABLE TO WENT INTO INBOX RETURNED\n")
+        print("UNABLE TO WENT INTO",folder_name,"\n")
         return None
     print("\t\t\t\t\t-----------------",folder_name,"-----------------\n")
     try:
-        UIDS = "a001 UID SEARCH ALL\r\n"
-        UIDS = bytes(UIDS, 'utf-8')
-        s.send(UIDS)
-        all_uids = s.recv(4096).decode()
-        while(True):
-            if ('a001 OK' in all_uids):
-                break
-            elif('a001 NO' in all_uids or 'a001 BAD' in all_uids):
-                print("1. UNABLE TO FETCH\n")
-                return None
-            all_uids += s.recv(4096).decode()
-        list = all_uids.split("\r\n")
-        list = list[0].split(" ")
-        list = list[2:]
+        list = get_uid_list()
         if(len(list) == 0):
             start_uid = -1
             end_uid = -1
@@ -118,7 +127,6 @@ def open_folder(folder_name, resp):
         return None
 
 def print_mail_headers(s, start, end):
-    print(start, end)
     if(start == -1 and end == -1):
         print("NO MAILS IN THIS FOLDER\n")
         print("R : RETURN TO MAIN MENU\t\tX : LOGOUT\n\n")
@@ -143,4 +151,35 @@ def print_mail_headers(s, start, end):
             return None
         all_uids = s.recv(4096).decode()
         print(all_uids)
-    return None
+    ret = 9
+    while(ret == 9):
+        ret = all_mail_next_window(start, end)
+    return ret
+
+def all_mail_next_window(start, end):
+    print("\n\nA : read message\tR : Back to main menu\tX : logout\n\n")
+    choice = str(input("CHOICE : "))
+    if(choice == 'X'):
+        return logout(s)
+    elif(choice == 'R'):
+        return unselect(s)
+    elif(choice == 'A'):
+        list = get_uid_list()
+        UID = int(input("Enter UID number : "))
+        if(str(UID) in list):
+            query = "a001 UID FETCH {0} (BODY[TEXT])\r\n".format(UID)
+            query = bytes(query, 'utf-8')
+            s.send(query)
+            msg_uids = s.recv(4096).decode()
+            while (True):
+                if ('a001 OK ' in msg_uids):
+                    break
+                elif ('a001 NO ' in msg_uids or 'a001 BAD ' in msg_uids):
+                    print("1. UNABLE TO FETCH\n")
+                    return None
+                msg_uids += s.recv(4096).decode()
+            msg = base64.decode(msg_uids) #msg decoding part remaining
+            print(msg)
+            return 9
+
+

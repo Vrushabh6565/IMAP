@@ -27,7 +27,7 @@ auth3 = "a003 UID SEARCH ALL\r\n"
 auth3 = bytes(auth3, 'utf-8')
 s.send(auth3)
 print(s.recv(1024))
-auth2 = "a004 UID FETCH 1555 (BODY[])\r\n"
+auth2 = "a004 UID FETCH 884 (BODY[HEADER.FIELDS (FROM TO DATE) TEXT])\r\n"
 s.send(auth2.encode())
 a = s.recv(2048)
 while(len(a) == 1024):

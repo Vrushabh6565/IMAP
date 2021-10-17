@@ -1,4 +1,3 @@
-from login import *
 def logout(s):
     msg = "a001 LOGOUT\r\n"
     msg = bytes(msg, 'utf-8')
@@ -6,10 +5,10 @@ def logout(s):
         s.send(msg)
         resp = s.recv(1024).decode()
         print("LOGGED OUT SUCCESSFULLY\n")
-        return 1
+        return 0
     except(ConnectionResetError):
         print("CONNECTION FORCEFULLY CLOSED BY SERVER\n")
-        return 1
+        return 0
 
 def unselect(s):
     msg = "a001 Close\r\n"
@@ -39,7 +38,6 @@ def list_folders(s):
     s.send(list)
     list = s.recv(4096).decode()
     while (True):
-        print("YES")
         if ('a002 OK' in list):
             break
         elif ('a002 NO' in list or 'a002 BAD' in list):

@@ -83,7 +83,5 @@ if __name__ == '__main__':
         sys.exit()
     if(login(auth)):
         call_back = authenticated_state()
-        print(call_back)
         while(call_back):
             call_back = authenticated_state()
-        print("THE END\n")
