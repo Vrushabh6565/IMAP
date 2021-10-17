@@ -1,6 +1,3 @@
-from socket import *
-import ssl
-from colorama import Fore, Style
 from folders import *
 from os import system
 clear = lambda: system('clear')
@@ -60,6 +57,7 @@ def print_dict(dict):
         print(i, end=" : ")
         print(j)
     return None
+
 def authenticated_state():
     folder_dict = MAILBOX()
     print(folder_dict)
@@ -69,7 +67,7 @@ def authenticated_state():
     for i in range(10):
         print('\t')
     select = str(input("ENTER CHOICE : "))
-    select_folder(select, folder_dict)
+    return select_folder(select, folder_dict)
 
 
 def select_folder(select, folder_dict):
@@ -78,8 +76,7 @@ def select_folder(select, folder_dict):
     try:
         s.send(query)
         resp = s.recv(4096)
-        open_folder(folder_dict.get(select), resp)
-        return None
+        return open_folder(folder_dict.get(select), resp)
     except:
         print("UNABLE TO FETCH ",folder_dict.get(select),"\n")
         return None
@@ -108,11 +105,42 @@ def open_folder(folder_name, resp):
         list = all_uids.split("\r\n")
         list = list[0].split(" ")
         list = list[2:]
-        start_uid = int(list[0])
-        end_uid = int(list[-1])
-        print_mail_headers(s, start_uid, end_uid)
-        return None
+        if(len(list) == 0):
+            start_uid = -1
+            end_uid = -1
+        else:
+            start_uid = int(list[0])
+            end_uid = int(list[-1])
+        return print_mail_headers(s, start_uid, end_uid)
 
     except:
-        print("SOMETHING WENT WRONG\n")
+        print("open folder SOMETHING WENT WRONG\n")
         return None
+
+def print_mail_headers(s, start, end):
+    print(start, end)
+    if(start == -1 and end == -1):
+        print("NO MAILS IN THIS FOLDER\n")
+        print("R : RETURN TO MAIN MENU\t\tX : LOGOUT\n\n")
+        while(True):
+            choice = str(input("CHOICE : "))
+            if(choice == 'R'):
+                return unselect(s)
+            elif(choice == 'X'):
+                return logout(s)
+            else:
+                print("WRONG CHOICE!!!")
+    query = "a001 UID FETCH {0}:{1} (UID BODY[HEADER.FIELDS (FROM DATE SUBJECT)])\r\n".format(start,end)
+    query = bytes(query, 'utf-8')
+    s.send(query)
+    all_uids = s.recv(4096).decode()
+    print(all_uids)
+    while (True):
+        if ('a001 OK ' in all_uids):
+            break
+        elif ('a001 NO ' in all_uids or 'a001 BAD ' in all_uids):
+            print("1. UNABLE TO FETCH\n")
+            return None
+        all_uids = s.recv(4096).decode()
+        print(all_uids)
+    return None

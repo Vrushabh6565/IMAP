@@ -1,6 +1,4 @@
-import base64
 from socket import *
-from sys import *
 import ssl
 s = socket(AF_INET, SOCK_STREAM)
 s = ssl.wrap_socket(s, ssl_version=ssl.PROTOCOL_SSLv23)

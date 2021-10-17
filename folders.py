@@ -1,5 +1,4 @@
 from login import *
-
 def logout(s):
     msg = "a001 LOGOUT\r\n"
     msg = bytes(msg, 'utf-8')
@@ -17,8 +16,9 @@ def unselect(s):
     msg = bytes(msg, 'utf-8')
     s.send(msg)
     resp = s.recv(1024).decode()
+    print(resp)
     if('a001 OK' in resp):
-        authenticated_state()
+        return 1
     else:
         return None
 
@@ -37,8 +37,15 @@ def list_folders(s):
     list = "a002 LIST \"\" \"*\"\r\n"
     list = bytes(list, 'utf-8')
     s.send(list)
-    list = s.recv(4096)
-    list = list.decode()
+    list = s.recv(4096).decode()
+    while (True):
+        print("YES")
+        if ('a002 OK' in list):
+            break
+        elif ('a002 NO' in list or 'a002 BAD' in list):
+            print("1. UNABLE TO FETCH\n")
+            return None
+        list += s.recv(4096).decode()
     list1 = list.split("\r\n")
     if('OK' in list1[-2]):
         list2 = []
@@ -51,19 +58,4 @@ def list_folders(s):
         print("UNABLE TO FETCH EXISTING FOLDERS...\n")
         return None
 
-def print_mail_headers(s, start, end):
-    query = "a001 UID FETCH {0}:{1} (UID BODY[HEADER.FIELDS (FROM DATE SUBJECT)])\r\n".format(start,end)
-    query = bytes(query, 'utf-8')
-    s.send(query)
-    all_uids = s.recv(4096).decode()
-    print(all_uids)
-    while (True):
-        if ('a001 OK ' in all_uids):
-            break
-        elif ('a001 NO ' in all_uids or 'a001 BAD ' in all_uids):
-            print("1. UNABLE TO FETCH\n")
-            return None
-        all_uids = s.recv(4096).decode()
-        print(all_uids)
-    return None
 

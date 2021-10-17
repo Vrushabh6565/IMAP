@@ -1,5 +1,6 @@
 import sys
 from login import *
+from folders import *
 def flagChecker():
     u = f = p = d = 0
     userName = Password = domain = file_path = ''
@@ -81,4 +82,8 @@ if __name__ == '__main__':
         print("PLEASE CHECKS FLAG AND VALUES AGAIN\n")
         sys.exit()
     if(login(auth)):
-        authenticated_state()
+        call_back = authenticated_state()
+        print(call_back)
+        while(call_back):
+            call_back = authenticated_state()
+        print("THE END\n")
