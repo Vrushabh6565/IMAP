@@ -1,3 +1,5 @@
+from login import *
+
 def logout(s):
     msg = "a001 LOGOUT\r\n"
     msg = bytes(msg, 'utf-8')
@@ -9,6 +11,16 @@ def logout(s):
     except(ConnectionResetError):
         print("CONNECTION FORCEFULLY CLOSED BY SERVER\n")
         return 1
+
+def unselect(s):
+    msg = "a001 Close\r\n"
+    msg = bytes(msg, 'utf-8')
+    s.send(msg)
+    resp = s.recv(1024).decode()
+    if('a001 OK' in resp):
+        authenticated_state()
+    else:
+        return None
 
 def inbox(s):
     msg = "a001 Select \"INBOX\"\r\n"
@@ -44,12 +56,14 @@ def print_mail_headers(s, start, end):
     query = bytes(query, 'utf-8')
     s.send(query)
     all_uids = s.recv(4096).decode()
+    print(all_uids)
     while (True):
-        if ('OK' in all_uids):
+        if ('a001 OK ' in all_uids):
             break
-        elif ('NO' in all_uids or 'BAD' in all_uids):
+        elif ('a001 NO ' in all_uids or 'a001 BAD ' in all_uids):
             print("1. UNABLE TO FETCH\n")
             return None
-        all_uids += s.recv(4096).decode()
-    print(all_uids)
+        all_uids = s.recv(4096).decode()
+        print(all_uids)
+    return None
 

@@ -81,14 +81,4 @@ if __name__ == '__main__':
         print("PLEASE CHECKS FLAG AND VALUES AGAIN\n")
         sys.exit()
     if(login(auth)):
-        folder_dict = MAILBOX()
-        print(folder_dict)
-        folder_dict['X'] = ' LOGOUT'
-        print_dict(folder_dict)
-        print("\n\n")
-        for i in range(10):
-            print('\t')
-        select = str(input("ENTER CHOICE : "))
-        if(folder_dict.get(select)):
-            select_folder(select,folder_dict)
-
+        authenticated_state()

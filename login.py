@@ -60,6 +60,17 @@ def print_dict(dict):
         print(i, end=" : ")
         print(j)
     return None
+def authenticated_state():
+    folder_dict = MAILBOX()
+    print(folder_dict)
+    folder_dict['X'] = ' LOGOUT'
+    print_dict(folder_dict)
+    print("\n\n")
+    for i in range(10):
+        print('\t')
+    select = str(input("ENTER CHOICE : "))
+    select_folder(select, folder_dict)
+
 
 def select_folder(select, folder_dict):
     query = "a001 Select{0}\r\n".format(folder_dict.get(select))
@@ -78,37 +89,19 @@ def open_folder(folder_name, resp):
     #clear()
     resp = resp.decode()
     list = resp.split("\r\n")
-    if ('OK' in list[1] and 'OK' in list[-2]):
-        print("followings flags are possible : \n")
-        flag_dict = {}
-        alpha = 'A'
-        a = list[1].split("\\")
-        for i in a[1:len(a) - 1]:
-            flag_dict[alpha] = i
-            alpha = chr(ord(alpha) + 1)
-        flag_dict['R'] = 'UNSELECT'
-        flag_dict['X'] = 'LOGOUT'
-        if(folder_name == " \"INBOX\""):
-            flag_dict['T'] = 'ALL'
-        print_dict(flag_dict)
-        choice = str(input("CHOICE : "))
-    else:
+    if ('NO' in list[-2] or 'BAD' in list[-2]):
         print("UNABLE TO WENT INTO INBOX RETURNED\n")
         return None
     print("\t\t\t\t\t-----------------",folder_name,"-----------------\n")
     try:
-        if(choice == 'R' and choice == 'X'):        #work required for R:UNSELECT
-            logout(s)
-            return None
-        UIDS = "a001 UID SEARCH {0}\r\n".format(flag_dict.get(choice).upper())
-        print(UIDS)
+        UIDS = "a001 UID SEARCH ALL\r\n"
         UIDS = bytes(UIDS, 'utf-8')
         s.send(UIDS)
         all_uids = s.recv(4096).decode()
         while(True):
-            if ('OK' in all_uids):
+            if ('a001 OK' in all_uids):
                 break
-            elif('NO' in all_uids or 'BAD' in all_uids):
+            elif('a001 NO' in all_uids or 'a001 BAD' in all_uids):
                 print("1. UNABLE TO FETCH\n")
                 return None
             all_uids += s.recv(4096).decode()
