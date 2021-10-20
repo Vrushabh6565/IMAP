@@ -178,7 +178,7 @@ def all_mail_next_window(start, end):
                     print("1. UNABLE TO FETCH\n")
                     return None
                 msg_uids += s.recv(4096).decode()
-            msg = base64.decode(msg_uids) #msg decoding part remaining
+            msg = base64.decode(msg_uids)   #msg decoding part remaining
             print(msg)
             return 9
 
