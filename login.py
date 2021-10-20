@@ -1,9 +1,11 @@
+import base64
+
 from folders import *
 from os import system
 from socket import *
 import ssl
 from colorama import *
-import base64
+#import base64
 clear = lambda: system('clear')
 
 s = socket(AF_INET, SOCK_STREAM)
@@ -79,11 +81,11 @@ def select_folder(select, folder_dict):
         return logout(s)
     query = "a001 Select{0}\r\n".format(folder_dict.get(select))
     query = bytes(query, 'utf-8')
-    try:
+    if(True):
         s.send(query)
         resp = s.recv(4096)
         return open_folder(folder_dict.get(select), resp)
-    except:
+    else:
         print("UNABLE TO FETCH ",folder_dict.get(select),"\n")
         return None
 
@@ -112,7 +114,7 @@ def open_folder(folder_name, resp):
         print("UNABLE TO WENT INTO",folder_name,"\n")
         return None
     print("\t\t\t\t\t-----------------",folder_name,"-----------------\n")
-    try:
+    if(True):
         list = get_uid_list()
         if(len(list) == 0):
             start_uid = -1
@@ -122,7 +124,7 @@ def open_folder(folder_name, resp):
             end_uid = int(list[-1])
         return print_mail_headers(s, start_uid, end_uid)
 
-    except:
+    else:
         print("open folder SOMETHING WENT WRONG\n")
         return None
 
@@ -167,7 +169,7 @@ def all_mail_next_window(start, end):
         list = get_uid_list()
         UID = int(input("Enter UID number : "))
         if(str(UID) in list):
-            get_bodyenvelope(UID)
+            body_by_mime(UID,2)
             #query = "a001 UID FETCH {0} (BODY[HEADER.FIELDS (CONTENT-TYPE)])\r\n".format(UID)
             #query = bytes(query, 'utf-8')
             #s.send(query)
@@ -217,4 +219,36 @@ def get_bodyenvelope(UID):
             return None
         msg_uids += s.recv(4096).decode()
     print(msg_uids)
+    return 1
+
+def body_by_mime(UID,num):
+    query = "a001 UID FETCH {0} (BODY[{1}])\r\n".format(UID,num)
+    query = bytes(query, 'utf-8')
+    s.send(query)
+    msg_uids = s.recv(4096).decode()
+    a = msg_uids.split("}")
+    b = a[0].split("{")
+    c = int(b[-1])
+    file = open("C:/Users/VRUSHABH/Desktop/picture.jpg", "wb")
+    msg_uids1 = bytes(b[1],'utf-8')
+    file.write(msg_uids1)
+    total = len(msg_uids)
+    i = 0
+    msg_uids = msg_uids.encode()
+    while (True):
+        if ('a001 OK ' in msg_uids.decode()):
+            break
+        elif ('a001 NO ' in msg_uids.decode() or 'a001 BAD ' in msg_uids.decode()):
+            print("1. UNABLE TO FETCH\n")
+            return None
+        msg_uids = s.recv(4096)
+        msg_uids1 = base64.b64decode(msg_uids, '-_')
+        file.write(msg_uids1)
+        file.flush()
+        total += len(msg_uids)
+        i = i + 1
+        if(i%100 == 0):
+            print("DOWNLOADED ==>",float(total/c)*100,"%\n")
+    print("DOWNLOADED ==>",100, "%\n")
+    file.close()
     return 1
