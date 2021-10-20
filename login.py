@@ -167,19 +167,54 @@ def all_mail_next_window(start, end):
         list = get_uid_list()
         UID = int(input("Enter UID number : "))
         if(str(UID) in list):
-            query = "a001 UID FETCH {0} (BODY[TEXT])\r\n".format(UID)
-            query = bytes(query, 'utf-8')
-            s.send(query)
-            msg_uids = s.recv(4096).decode()
-            while (True):
-                if ('a001 OK ' in msg_uids):
-                    break
-                elif ('a001 NO ' in msg_uids or 'a001 BAD ' in msg_uids):
-                    print("1. UNABLE TO FETCH\n")
-                    return None
-                msg_uids += s.recv(4096).decode()
-            msg = base64.decode(msg_uids)   #msg decoding part remaining
-            print(msg)
+            get_bodyenvelope(UID)
+            #query = "a001 UID FETCH {0} (BODY[HEADER.FIELDS (CONTENT-TYPE)])\r\n".format(UID)
+            #query = bytes(query, 'utf-8')
+            #s.send(query)
+            #msg_uids = s.recv(4096).decode()
+            #print(msg_uids)
+            #query = "a001 UID FETCH {0} (BODY[])\r\n".format(UID)
+            #query = bytes(query, 'utf-8')
+            #s.send(query)
+            #msg_uids = s.recv(4096).decode()
+            # print(msg_uids)
+            # while (True):
+            #     if ('a001 OK ' in msg_uids):
+            #         break
+            #     elif ('a001 NO ' in msg_uids or 'a001 BAD ' in msg_uids):
+            #         print("1. UNABLE TO FETCH\n")
+            #         return None
+            #     msg_uids += s.recv(4096).decode()
+            # #msg = base64.decode(msg_uids)   #msg decoding part remaining
+            # print(msg_uids)
             return 9
 
+def get_bodystructure(UID):
+    query = "a001 UID FETCH {0} (BODYSTRUCTURE)\r\n".format(UID)
+    query = bytes(query, 'utf-8')
+    s.send(query)
+    msg_uids = s.recv(4096).decode()
+    while (True):
+        if ('a001 OK ' in msg_uids):
+            break
+        elif ('a001 NO ' in msg_uids or 'a001 BAD ' in msg_uids):
+            print("1. UNABLE TO FETCH\n")
+            return None
+        msg_uids += s.recv(4096).decode()
+    print(msg_uids)
+    return 1
 
+def get_bodyenvelope(UID):
+    query = "a001 UID FETCH {0} (BODY ENVELOPE)\r\n".format(UID)
+    query = bytes(query, 'utf-8')
+    s.send(query)
+    msg_uids = s.recv(4096).decode()
+    while (True):
+        if ('a001 OK ' in msg_uids):
+            break
+        elif ('a001 NO ' in msg_uids or 'a001 BAD ' in msg_uids):
+            print("1. UNABLE TO FETCH\n")
+            return None
+        msg_uids += s.recv(4096).decode()
+    print(msg_uids)
+    return 1
