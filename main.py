@@ -68,7 +68,7 @@ def create_auth_table(bin, u, p, d, f):
                 log_auth.append(d)
                 return log_auth
     elif(bin == '0111'):
-        log_auth.append(u)
+        log_auth.append(u)      #['userName', .Password', 'domain']
         log_auth.append(p)
         log_auth.append(d)
         return log_auth

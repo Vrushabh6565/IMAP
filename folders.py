@@ -1,3 +1,4 @@
+import base64
 def logout(s):
     msg = "a001 LOGOUT\r\n"
     msg = bytes(msg, 'utf-8')
@@ -56,4 +57,29 @@ def list_folders(s):
         print("UNABLE TO FETCH EXISTING FOLDERS...\n")
         return None
 
+def content_html(s,file,charset, uid):
+    auth2 = "a004 UID FETCH {0} (BODY[TEXT])\r\n".format(uid)
+    s.send(auth2.encode())
+    b = s.recv(8192).decode(charset)
+    while ('a004 OK' not in b):
+        b += s.recv(8192).decode(charset)
+    c = b.split("}")[1]
+    c = c.split("\r\n\r\n")[0]
+    d = base64.standard_b64decode(c)
+    file.write(d.decode())
+    return 1
 
+def content_plain(s,charset, uid):
+    try:
+        auth2 = "a004 UID FETCH {0} (BODY[TEXT])\r\n".format(uid)
+        s.send(auth2.encode())
+        b = s.recv(8192).decode(charset)
+        while ('a004 OK' not in b):
+            b += s.recv(8192).decode(charset)
+        c = b.split("}")[1]
+        c = c.split(")\r\n")[0]
+        print(c)
+        return 1
+    except:
+        print("WRONG IN CONTENT PLAIN")
+        return 0

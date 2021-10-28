@@ -1,5 +1,3 @@
-import base64
-
 from folders import *
 from os import system
 from socket import *
@@ -81,11 +79,11 @@ def select_folder(select, folder_dict):
         return logout(s)
     query = "a001 Select{0}\r\n".format(folder_dict.get(select))
     query = bytes(query, 'utf-8')
-    if(True):
+    try:
         s.send(query)
         resp = s.recv(4096)
         return open_folder(folder_dict.get(select), resp)
-    else:
+    except:
         print("UNABLE TO FETCH ",folder_dict.get(select),"\n")
         return None
 
@@ -114,7 +112,7 @@ def open_folder(folder_name, resp):
         print("UNABLE TO WENT INTO",folder_name,"\n")
         return None
     print("\t\t\t\t\t-----------------",folder_name,"-----------------\n")
-    if(True):
+    try:
         list = get_uid_list()
         if(len(list) == 0):
             start_uid = -1
@@ -124,7 +122,7 @@ def open_folder(folder_name, resp):
             end_uid = int(list[-1])
         return print_mail_headers(s, start_uid, end_uid)
 
-    else:
+    except:
         print("open folder SOMETHING WENT WRONG\n")
         return None
 
@@ -168,28 +166,9 @@ def all_mail_next_window(start, end):
     elif(choice == 'A'):
         list = get_uid_list()
         UID = int(input("Enter UID number : "))
-        if(str(UID) in list):
-            body_by_mime(UID,2)
-            #query = "a001 UID FETCH {0} (BODY[HEADER.FIELDS (CONTENT-TYPE)])\r\n".format(UID)
-            #query = bytes(query, 'utf-8')
-            #s.send(query)
-            #msg_uids = s.recv(4096).decode()
-            #print(msg_uids)
-            #query = "a001 UID FETCH {0} (BODY[])\r\n".format(UID)
-            #query = bytes(query, 'utf-8')
-            #s.send(query)
-            #msg_uids = s.recv(4096).decode()
-            # print(msg_uids)
-            # while (True):
-            #     if ('a001 OK ' in msg_uids):
-            #         break
-            #     elif ('a001 NO ' in msg_uids or 'a001 BAD ' in msg_uids):
-            #         print("1. UNABLE TO FETCH\n")
-            #         return None
-            #     msg_uids += s.recv(4096).decode()
-            # #msg = base64.decode(msg_uids)   #msg decoding part remaining
-            # print(msg_uids)
-            return 9
+        b = content_type(UID)
+        simple_body(b,UID)
+        return 9
 
 def get_bodystructure(UID):
     query = "a001 UID FETCH {0} (BODYSTRUCTURE)\r\n".format(UID)
@@ -221,34 +200,42 @@ def get_bodyenvelope(UID):
     print(msg_uids)
     return 1
 
-def body_by_mime(UID,num):
-    query = "a001 UID FETCH {0} (BODY[{1}])\r\n".format(UID,num)
+def content_type(UID):
+    query = "a001 UID FETCH {0} (BODY[HEADER.FIELDS (CONTENT-TYPE)])\r\n".format(UID)
     query = bytes(query, 'utf-8')
     s.send(query)
-    msg_uids = s.recv(4096).decode()
-    a = msg_uids.split("}")
-    b = a[0].split("{")
-    c = int(b[-1])
-    file = open("C:/Users/VRUSHABH/Desktop/picture.jpg", "wb")
-    msg_uids1 = bytes(b[1],'utf-8')
-    file.write(msg_uids1)
-    total = len(msg_uids)
-    i = 0
-    msg_uids = msg_uids.encode()
+    cont = s.recv(4096).decode()
     while (True):
-        if ('a001 OK ' in msg_uids.decode()):
+        if ('a001 OK ' in cont):
             break
-        elif ('a001 NO ' in msg_uids.decode() or 'a001 BAD ' in msg_uids.decode()):
+        elif ('a001 NO ' in cont or 'a001 BAD ' in cont):
             print("1. UNABLE TO FETCH\n")
             return None
-        msg_uids = s.recv(4096)
-        msg_uids1 = base64.b64decode(msg_uids, '-_')
-        file.write(msg_uids1)
-        file.flush()
-        total += len(msg_uids)
-        i = i + 1
-        if(i%100 == 0):
-            print("DOWNLOADED ==>",float(total/c)*100,"%\n")
-    print("DOWNLOADED ==>",100, "%\n")
-    file.close()
-    return 1
+        cont += s.recv(4096).decode()
+    return cont
+
+def simple_body(b, uid):
+    b = b.split("\r\n\r\n)")[0]
+    b = b.split("\r\n")[1]
+    b = b.split(";")
+    content_type = b[0].split(": ")[1]
+    charset = b[1].split("=")[1]
+    if(content_type == "text/html"):
+        a = str(input("CONTENT IN HTML FORMAT DOWNLOAD NEEDED(Y/N) : "))
+        if(a == 'Y'):
+            file = open("C:/Users/VRUSHABH/Desktop/login/main.html","w")
+            if(content_html(s,file,charset,uid)):
+                print("CONTENT FILE DOWNLOADED\n")
+                file.close()
+            else:
+                print("ERROR WHILE DOWNLOADING\n")
+        else:
+            return None
+    elif (content_type == "text/plain"):
+        if(content_plain(s,charset, uid)):
+            return 1
+        else:
+            return 0
+    else:
+        print("NONE\n")
+        return 0
