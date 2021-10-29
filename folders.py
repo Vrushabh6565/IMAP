@@ -86,12 +86,11 @@ def content_plain(s,charset, uid):
         return 0
 
 def decode(encoding,content):
-    print("decode called with : ", encoding)
-    if(encoding == "quoted-printable"):
+    if(encoding == "quoted-printable" or encoding == "7bit" or encoding == ''):
         return content
-    elif(encoding == base64):
+    elif(encoding == "base64"):
         d = base64.standard_b64decode(content)
-        return d.decode()
+        return d
 
 
 def mixed_body(s,x,uid):
@@ -111,8 +110,12 @@ def mixed_body(s,x,uid):
     c = b[a+3:]
     c = c.split("Content-Type: text/html; charset=")[1]
     charset = c.split("\r\n")[0]
-    encoding = c.split("Content-Transfer-Encoding: ")[1]
-    encoding = encoding.split("\r\n")[0]
+    encoding = c.split("Content-Transfer-Encoding: ")
+    if ("filename=" in encoding[0]):
+        encoding = ''
+    else:
+        encoding = encoding[1]
+        encoding = encoding.split("\r\n")[0]
     content_index = c.find("\r\n\r\n")
     split_str = c[content_index+4:]
     split_str = split_str.split(x)[0]
