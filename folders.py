@@ -86,6 +86,7 @@ def content_plain(s,charset, uid):
         return 0
 
 def decode(encoding,content):
+    print("decode called with : ", encoding)
     if(encoding == "quoted-printable"):
         return content
     elif(encoding == base64):
@@ -94,7 +95,6 @@ def decode(encoding,content):
 
 
 def mixed_body(s,x,uid):
-    print("mix called")
     html = []
     html_files = []
     inline_files = []
@@ -109,29 +109,31 @@ def mixed_body(s,x,uid):
     c = b.split("}")[1]
     a = b.find('}')
     c = b[a+3:]
-    if("Content-Type: text/html" in c):
-        c = c.split("Content-Type: text/html; charset=")[1]
-        charset = c.split("\r\n")[0]
-        encoding = c.split("Content-Transfer-Encoding: ")[1]
-        encoding = encoding.split("\r\n\r\n")[0]
-        split_str = "Content-Transfer-Encoding: "+encoding+"\r\n\r\n"
-        encoded_content = c.split(split_str)[1]
-        encoded_content = encoded_content.split(x)[0]
-        decoded_html = decode(encoding,encoded_content)
-        html_files.append("main.html")
-        html.append(decoded_html)
+    c = c.split("Content-Type: text/html; charset=")[1]
+    charset = c.split("\r\n")[0]
+    encoding = c.split("Content-Transfer-Encoding: ")[1]
+    encoding = encoding.split("\r\n")[0]
+    content_index = c.find("\r\n\r\n")
+    split_str = c[content_index+4:]
+    split_str = split_str.split(x)[0]
+    decoded_html = decode(encoding,split_str)
+    html_files.append("main.html")
+    html.append(decoded_html)
     if("Content-Disposition: " in b):
         files = b.split("Content-Disposition: ")
         files = files[1:]
         for i in files:
             file_type = i.split(";")[0]
             file_name = i.split("filename=")[1]
-            file_name = file_name.split(";")[0]
-            file_name = file_name[1:]
-            file_name = file_name[:-1]
+            file_name = file_name.split("\"")[1]
+            #file_name = file_name[1:]
+            #file_name = file_name[:-1]
             encode = i.split("Content-Transfer-Encoding: ")[1]
             encode = encode.split("\r\n")[0]
-            content = i.split("\r\n\r\n")[1]
+            content_index = i.find("\r\n\r\n")
+            content = i[content_index+4:]
+            split_str = "\r\n--"+x
+            content = content.split(split_str)[0]
             decoded_content = decode(encode,content)
             if(file_type == "inline"):
                 inline.append(decoded_content)

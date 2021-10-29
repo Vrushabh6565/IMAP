@@ -218,8 +218,10 @@ def simple_body(b, uid):
     if ("boundary" in b):
         b = b.split("boundary=")[1]
         b = b.split("\r\n")[0]
-        print(b)
+        if("\"" in b):
+            b = b.split("\"")[1]
         mixed_body(s,b,uid)
+        return None
     b = b.split("\r\n\r\n)")[0]
     b = b.split("\r\n")[1]
     b = b.split(";")
