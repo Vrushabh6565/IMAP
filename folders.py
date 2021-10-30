@@ -65,6 +65,9 @@ def content_html(s,file,charset, uid):
     while ('a004 OK' not in b):
         b += s.recv(8192).decode(charset)
     c = b.split("}")[1]
+    if (charset == "us-ascii" or charset == "7 bit" or charset == "quoted-printable" or charset == ''):
+        file.write(c)
+        return 1
     c = c.split("\r\n\r\n")[0]
     d = base64.standard_b64decode(c)
     file.write(d.decode())
@@ -86,12 +89,11 @@ def content_plain(s,charset, uid):
         return 0
 
 def decode(encoding,content):
-    if(encoding == "quoted-printable" or encoding == "7bit" or encoding == ''):
+    if(encoding == "quoted-printable" or encoding == "7bit" or encoding == "us-ascii" or encoding == ''):
         return content
     elif(encoding == "base64"):
         d = base64.standard_b64decode(content)
         return d
-
 
 def mixed_body(s,x,uid):
     html = []
@@ -105,17 +107,21 @@ def mixed_body(s,x,uid):
     b = s.recv(8192).decode()
     while ('a004 OK' not in b):
         b += s.recv(8192).decode()
+    print(b)
     c = b.split("}")[1]
     a = b.find('}')
     c = b[a+3:]
     c = c.split("Content-Type: text/html; charset=")[1]
     charset = c.split("\r\n")[0]
-    encoding = c.split("Content-Transfer-Encoding: ")
-    if ("filename=" in encoding[0]):
-        encoding = ''
+    if("Content-Transfer-Encoding: " in c):
+        encoding = c.split("Content-Transfer-Encoding: ")
+        if ("filename=" in encoding[0]):
+            encoding = ''
+        else:
+            encoding = encoding[1]
+            encoding = encoding.split("\r\n")[0]
     else:
-        encoding = encoding[1]
-        encoding = encoding.split("\r\n")[0]
+        encoding = ''
     content_index = c.find("\r\n\r\n")
     split_str = c[content_index+4:]
     split_str = split_str.split(x)[0]
