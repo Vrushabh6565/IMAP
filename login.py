@@ -220,6 +220,7 @@ def simple_body(b, uid):
         b = b.split("\r\n")[0]
         if("\"" in b):
             b = b.split("\"")[1]
+            print(b)
         mixed_body(s,b,uid)
         return None
     b = b.split("\r\n\r\n)")[0]

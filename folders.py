@@ -89,13 +89,13 @@ def content_plain(s,charset, uid):
         return 0
 
 def decode(encoding,content):
-    if(encoding == "quoted-printable" or encoding == "7bit" or encoding == "us-ascii" or encoding == ''):
+    if(encoding == "quoted-printable" or encoding == "7bit" or encoding == "us-ascii" or encoding == '' or encoding == '8bit'):
         return content
     elif(encoding == "base64"):
         d = base64.standard_b64decode(content)
         return d
 
-def mixed_body(s,x,uid):
+'''def mixed_body(s,x,uid):
     html = []
     html_files = []
     inline_files = []
@@ -174,6 +174,174 @@ def mixed_body(s,x,uid):
         path1 = ''
         path1 = path + "/" + attachment_files[i]
         file1 = open(path1,"wb")
+        file1.write(attachment[i])
+        file1.close()
+    return None'''
+def sub_boundary_split(b):
+    print("sub boundary called")
+    print("sub split called")
+    content_dict = {}
+    boundary = b.split("boundary=")[1]
+    boundary = boundary.split("\r\n")[0]
+    boundary = boundary.split("\"")
+    if(len(boundary) == 1):
+        boundary = boundary[0]
+    elif(len(boundary) == 3):
+        boundary = boundary[1]
+    boundary = "--"+boundary
+    body = b.split(boundary)
+    body = body[1:-1]
+    for i in body:
+        encoding = ""
+        if("Content-Type: text/plain" in i):
+            charset = i.split("charset=")[1].split("\r\n")[0]
+            if("Content-Transfer-Encoding:" in i):
+                encoding = i.split("Content-Transfer-Encoding: ")[1].split("\r\n")[0]
+            content = i.split("\r\n\r\n")[1]
+            decoded_content = decode(encoding, content)
+            content_dict["text/plain"] = decoded_content
+        elif("Content-Type: text/html" in i):
+            charset = i.split("charset=")[1].split("\r\n")[0]
+            if ("Content-Transfer-Encoding:" in i):
+                encoding = i.split("Content-Transfer-Encoding: ")[1].split("\r\n")[0]
+                print(encoding)
+            content = i.split("\r\n\r\n")[1]
+            decoded_content = decode(encoding, content)
+            print("ok till here")
+            content_dict["text/html"] = decoded_content
+    return content_dict
+
+def dict_maker(files, f_type):
+    my_dict = {}
+    for k, v in enumerate(files):
+        key = f_type + str(k)
+        my_dict[key] = v
+    return my_dict
+
+def mixed_body(s, boundary, uid):
+    print("mixed body called")
+    html = []
+    html_files = []
+    inline_files = []
+    inline = []
+    attachment_files = []
+    attachment = []
+    auth2 = "a004 UID FETCH {0} (BODY[TEXT])\r\n".format(uid)
+    s.send(auth2.encode())
+    b = s.recv(8192).decode()
+    while ('a004 OK' not in b):
+        b += s.recv(8192).decode()
+    file = open("C:/Users/VRUSHABH/Desktop/login/c.txt", "w",errors='replace')
+    file.write(b)
+    boundary = "--"+boundary
+    b = b.split(boundary)
+    b = b[1:-1]
+    if("boundary=" in b[0]):
+        content_dict = sub_boundary_split(b[0])
+        if(len(content_dict) != 0):
+            for key, value in content_dict.items():
+                if(key == "text/plain"):
+                    print(value)
+                elif(key == "text/html"):
+                    html_files.append("main.html")
+                    html.append(value)
+    b = b[1:]
+    for i in b:
+        i = i.split("\r\n\r\n")
+        if ("Content-Disposition: " in i[0]):
+            position_type = i[0].split("Content-Disposition: ")[1]
+            position_type = position_type.split(";")[0]
+            filename = ""
+            encoding = ""
+            if ("filename=" in i[0]):
+                filename = i[0].split("filename=")[1].split("\r\n")[0]
+                filename = filename.split("\"")[1]
+            elif ("name=" in i[0]):
+                filename = i[0].split("name=")[1].split("\r\n")[0]
+                filename = filename.split("\"")[1]
+            else:
+                filename = "unknown.txt"  # working
+            if ("Content-Transfer-Encoding: " in i[0]):
+                encoding = i[0].split("Content-Transfer-Encoding: ")[1].split("\r\n")[0]
+            encoded_content = "\r\n\r\n"
+            encoded_content = encoded_content.join(i[1:])
+            decoded_content = decode(encoding, encoded_content)
+            if (position_type == "attachment"):
+                attachment_files.append(filename)
+                attachment.append(decoded_content)
+            elif (position_type == "inline"):
+                inline_files.append(filename)
+                inline.append(decoded_content)
+        elif ("Content-Disposition: " not in i):
+            encoding = ""
+            if ("Content-Type: text/plain" in i[0]):
+                charset = i[0].split("charset=")[1].split("\r\n")[0]
+                if ("Content-Transfer-Encoding:" in i):
+                    encoding = i[0].split("Content-Transfer-Encoding: ")[1].split("\r\n")[0]
+                content = i[1]
+                decoded_content = decode(encoding, content)
+                print(decoded_content)
+            elif ("Content-Type: text/html" in i[0]):
+                print("i reached inside")
+                charset = i[0].split("charset=")[1].split("\r\n")[0]
+                if ("Content-Transfer-Encoding:" in i):
+                    encoding = i[0].split("Content-Transfer-Encoding: ")[1].split("\r\n")[0]
+                content = i[1]
+                decoded_content = decode(encoding, content)
+                html_files.append("main1.html")
+                html.append(decoded_content)
+    html_dict = dict_maker(html_files, 'h')
+    inline_dict = dict_maker(inline_files, 'i')
+    attachment_dict = dict_maker(attachment_files, 'a')
+    if(len(html_dict) != 0):
+        print("main mail : ")
+        for k,v in html_dict.items():
+            print("\t\t",k," : ",v,"\r\n")
+    if (len(inline_dict) != 0):
+        print("inline files : ")
+        for k, v in inline_dict.items():
+            print("\t\t", k, " : ", v, "\r\n")
+    if (len(attachment_dict) != 0):
+        print("attachment files : ")
+        for k, v in attachment_dict.items():
+            print("\t\t", k, " : ", v, "\r\n")
+
+    print("if do not wnant to download any attachment then press \".\"\r\n *give all file names SPACE SEPERATED*")
+    download_choice = str(input("enter files you want to download : "))
+    if(download_choice == "."):
+        return None
+    download_html = []
+    download_inline = []
+    download_attachment = []
+    download_choice = download_choice.split(" ")
+    for i in download_choice:
+        if(i[0] == 'h' and int(i[1]) < len(html_files)):
+            download_html.append(int(i[1]))
+        elif (i[0] == 'i' and int(i[1]) < len(inline_files)):
+            download_inline.append(int(i[1]))
+        elif (i[0] == 'a' and int(i[1]) < len(attachment_files)):
+            download_attachment.append(int(i[1]))
+        else:
+            print(i,"is not downloadable")
+            continue
+    path = "C:/Users/VRUSHABH/Desktop/login/" + str(uid)
+    mkdir(path)
+    for i in download_html:
+        path1 = ''
+        path1 = path + "/" + html_files[i]
+        file1 = open(path1, "w",errors='replace')
+        file1.write(html[i])
+        file1.close()
+    for i in download_inline:
+        path1 = ''
+        path1 = path + "/" + inline_files[i]
+        file1 = open(path1, "wb")
+        file1.write(inline[i])
+        file1.close()
+    for i in download_attachment:
+        path1 = ''
+        path1 = path + "/" + attachment_files[i]
+        file1 = open(path1, "wb")
         file1.write(attachment[i])
         file1.close()
     return None
