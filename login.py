@@ -157,7 +157,7 @@ def print_mail_headers(s, start, end):
     return ret
 
 def all_mail_next_window(start, end):
-    print("\n\nA : read message\tR : Back to main menu\tX : logout\n\n")
+    print("\n\nA : read message\t\tR : Back to main menu\t\tF : SET FLAGS TO MAIL\t\tD : DELETE MAIL\t\tX : logout\n\n")
     choice = str(input("CHOICE : "))
     if(choice == 'X'):
         return logout(s)
@@ -165,10 +165,21 @@ def all_mail_next_window(start, end):
         return unselect(s)
     elif(choice == 'A'):
         list = get_uid_list()
-        UID = int(input("Enter UID number : "))
-        b = content_type(UID)
-        simple_body(b,UID)
+        UID = str(input("Enter UID number : "))
+        if(UID in list):
+            b = content_type(int(UID))
+            simple_body(b,int(UID))
         return 9
+    elif(choice == 'F'):
+        list = get_uid_list()
+        UID = str(input("Enter UID number : "))
+        if (UID in list):
+            return set_flag(s, str(UID))
+    elif(choice == 'D'):
+        list = get_uid_list()
+        UID = str(input("Enter UID number : "))
+        if (UID in list):
+            return delete(s,int(UID))
 
 def get_bodystructure(UID):
     query = "a001 UID FETCH {0} (BODYSTRUCTURE)\r\n".format(UID)

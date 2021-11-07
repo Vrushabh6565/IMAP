@@ -177,6 +177,7 @@ def decode(encoding,content):
         file1.write(attachment[i])
         file1.close()
     return None'''
+
 def sub_boundary_split(b):
     print("sub boundary called")
     print("sub split called")
@@ -345,3 +346,93 @@ def mixed_body(s, boundary, uid):
         file1.write(attachment[i])
         file1.close()
     return None
+
+def delete(s,uid):
+    print("please check the details again\n")
+    auth2 = "a004 UID FETCH {0} (BODY[HEADER.FIELDS (FROM TO DATE SUBJECT)])\r\n".format(uid)
+    s.send(auth2.encode())
+    b = s.recv(8192).decode()
+    while ('a004 OK' not in b):
+        b += s.recv(8192).decode()
+    print(b)
+    choice = str(input("WANT TO DELETE[Y/N] : "))
+    if (choice == "Y" or choice == "y"):
+        auth2 = "a004 UID STORE {0} +FLAGS (\Deleted)\r\n".format(uid)
+        s.send(auth2.encode())
+        b = s.recv(8192).decode()
+        while ('a004 OK' not in b):
+            b += s.recv(8192).decode()
+        auth2 = "a004 EXPUNGE\r\n"
+        s.send(auth2.encode())
+        b = s.recv(8192).decode()
+        while ('a004 OK' not in b):
+            b += s.recv(8192).decode()
+        print("mail deleted successfully")
+        return 9
+    elif (choice == "N" or choice == "n"):
+        return 9
+    else:
+        print("wrong input")
+        return 9
+
+def set_flag(s, uid):
+    print("S : SET FLAGS\t\t R : REMOVE FLAGS\t\tC: Check flags\nAny other key to exit")
+    choice = str(input("enter choice : "))
+    if(choice == 'C' or choice == 'c'):
+        auth2 = "a004 UID FETCH 39 FLAGS\r\n"
+        s.send(auth2.encode())
+        b = s.recv(8192).decode()
+        while ('a004 OK' not in b):
+            b += s.recv(8192).decode()
+        b = b.split("a004 OK")[0]
+        b = b.split("FETCH ")[1]
+        print(b)
+        return 9
+    elif(choice == "S" or choice == "s" or choice == 'R' or choice == "r"):
+        status = ""
+        if(choice == "S" or choice == "s"):
+            status = "+FLAGS"
+        elif(choice == 'R' or choice == "r"):
+            status = "-FLAGS"
+
+        print("A: Answered\t\tB: Flagged\t\tC: Draft\t\tE: Seen\n any other key to exit")
+        print("for two or more flags give space separated choice\n")
+        choice = str(input("enter choice : "))
+        choice = choice.split(" ")
+        if(('A' in choice) or ('B' in choice) or ('C' in choice) or ('D' in choice)):
+            flags = ""
+            for i in range(len(choice)):
+                if(choice[i] == 'A' or choice == 'a'):
+                    if(i == 0):
+                        flags = flags + "/Answered"
+                    else:
+                        flags = flags + " /Answered"
+                elif (choice[i] == 'B' or choice == 'b'):
+                    if (i == 0):
+                        flags = flags + "/Flagged"
+                    else:
+                        flags = flags + " /Flagged"
+                elif (choice[i] == 'C' or choice == 'c'):
+                    if (i == 0):
+                        flags = flags + "/Draft"
+                    else:
+                        flags = flags + " /Draft"
+                elif (choice[i] == 'D' or choice == 'd'):
+                    if (i == 0):
+                        flags = flags + "/Seen"
+                    else:
+                        flags = flags + " /Seen"
+                else:
+                    print("wrong choice {0} . skipped...".format(choice[i]))
+            auth2 = "a004 UID STORE {0} {1} ({2})\r\n".format(uid, status, flags)
+            s.send(auth2.encode())
+            b = s.recv(8192).decode()
+            while ('a004 OK' not in b):
+                b += s.recv(8192).decode()
+            print(b)
+            print("flags set/removed successfully")
+            return 9
+
+    else:
+        print("returning back")
+        return 9
