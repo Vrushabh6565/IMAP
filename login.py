@@ -3,8 +3,6 @@ from os import system
 from socket import *
 import ssl
 from colorama import *
-#import base64
-clear = lambda: system('clear')
 
 s = socket(AF_INET, SOCK_STREAM)
 s = ssl.wrap_socket(s, ssl_version=ssl.PROTOCOL_SSLv23)
@@ -45,26 +43,10 @@ def authenticate(userName, Password, s):
         print(f'{Fore.RED}LOGIN AUTHENTICATION FAILED PLEASE CHECK YOUR MAIL-ID AND PASSWORD{Style.RESET_ALL}')
         return 0
 
-def MAILBOX():
-    folders = list_folders(s)
-    if(folders):
-        folder_dict = {}
-        alpha = 'A'
-        for i in folders:
-            folder_dict[alpha] = i
-            alpha = chr(ord(alpha) + 1)
-        return folder_dict
-
-def print_dict(dict):
-    for i,j in dict.items():
-        for k in range(10):
-            print('\t',end='')
-        print(i, end=" : ")
-        print(j)
-    return None
 
 def authenticated_state():
-    folder_dict = MAILBOX()
+    folder_dict = MAILBOX(s)
+    folder_dict['CF'] = ' CREATE/DELETE FOLDER'
     folder_dict['X'] = ' LOGOUT'
     print_dict(folder_dict)
     print("\n\n")
@@ -77,6 +59,8 @@ def authenticated_state():
 def select_folder(select, folder_dict):
     if(select == "X"):
         return logout(s)
+    elif(select == "CF"):
+        return create_folder(s)
     query = "a001 Select{0}\r\n".format(folder_dict.get(select))
     query = bytes(query, 'utf-8')
     try:
@@ -86,6 +70,7 @@ def select_folder(select, folder_dict):
     except:
         print("UNABLE TO FETCH ",folder_dict.get(select),"\n")
         return None
+
 
 def get_uid_list():
     UIDS = "a001 UID SEARCH ALL\r\n"
@@ -157,7 +142,7 @@ def print_mail_headers(s, start, end):
     return ret
 
 def all_mail_next_window(start, end):
-    print("\n\nA : read message\t\tR : Back to main menu\t\tF : SET FLAGS TO MAIL\t\tD : DELETE MAIL\t\tX : logout\n\n")
+    print("\n\nA : read message\t\tR : Back to main menu\t\tF : SET FLAGS TO MAIL\t\tD : DELETE MAIL\t\tC : COPY MAIL\t\tX : logout\n\n")
     choice = str(input("CHOICE : "))
     if(choice == 'X'):
         return logout(s)
@@ -180,6 +165,9 @@ def all_mail_next_window(start, end):
         UID = str(input("Enter UID number : "))
         if (UID in list):
             return delete(s,int(UID))
+    elif(choice == 'C'):
+        id = str(input("Enter local ID (NOT uid) : "))
+        return copy(s,id)
 
 def get_bodystructure(UID):
     query = "a001 UID FETCH {0} (BODYSTRUCTURE)\r\n".format(UID)
@@ -231,7 +219,6 @@ def simple_body(b, uid):
         b = b.split("\r\n")[0]
         if("\"" in b):
             b = b.split("\"")[1]
-            print(b)
         mixed_body(s,b,uid)
         return None
     b = b.split("\r\n\r\n)")[0]

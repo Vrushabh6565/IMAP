@@ -1,5 +1,24 @@
 import base64
 from os import mkdir
+
+def MAILBOX(s):
+    folders = list_folders(s)
+    if(folders):
+        folder_dict = {}
+        alpha = 'A'
+        for i in folders:
+            folder_dict[alpha] = i
+            alpha = chr(ord(alpha) + 1)
+        return folder_dict
+
+def print_dict(dict):
+    for i,j in dict.items():
+        for k in range(10):
+            print('\t',end='')
+        print(i, end=" : ")
+        print(j)
+    return None
+
 def logout(s):
     msg = "a001 LOGOUT\r\n"
     msg = bytes(msg, 'utf-8')
@@ -435,4 +454,69 @@ def set_flag(s, uid):
 
     else:
         print("returning back")
+        return 9
+
+
+def create_folder(s):
+    print("R : return to main menu C: CREATE D : DELETE\n")
+    choice = str(input("enter choice :"))
+    if(choice == "R" or choice == 'r'):
+        return 1
+    elif(choice == "C" or choice == "c"):
+        f_name = str(input("Enter folder name : "))
+        auth1 = "a002 CREATE {0}\r\n".format(f_name)
+        s.send(auth1.encode())
+        resp =  s.recv(1024).decode()
+        if("a002 OK" in resp):
+            print("folder created successfully\n")
+        else:
+            print("unable to create folder(May folder with entered name already exist)\n")
+        return 1
+
+    elif(choice == "D" or choice == "d"):
+        folder_dict1 = MAILBOX(s)
+        print_dict(folder_dict1)
+        print("select the folder you want to delete")
+        choice = str(input("Enter choice : "))
+        folder = folder_dict1.get(choice)
+        if(folder):
+            print("Do you really want to delete folder", folder, " [Y/N]: ")
+            confirm = str(input("confirm : "))
+            if(confirm == "Y" or confirm == "y"):
+                folder = folder.split("\"")[1]
+                auth1 = "a002 DELETE {0}\r\n".format(folder)
+                s.send(auth1.encode())
+                resp = s.recv(1024).decode()
+                if("a002 OK" in resp):
+                    print("folder deleted successfully")
+                else:
+                    print("selected internal folder which cannot be deleted")
+                return 1
+            else:
+                return 1
+        else:
+            print("Wrong folder choice")
+            return 1
+    else:
+        return 1
+
+def copy(s, id):
+    folder_dict1 = MAILBOX(s)
+    print_dict(folder_dict1)
+    print("select the destination folder")
+    choice = str(input("Enter choice : "))
+    folder = folder_dict1.get(choice)
+    if (folder):
+        folder = folder.split("\"")[1]
+        auth1 = "a002 COPY {0} {1}\r\n".format(id, folder)
+        auth1 = bytes(auth1, 'utf-8')
+        s.send(auth1)
+        resp = s.recv(1024).decode()
+        if("a002 OK" in resp):
+            print("mail copied to folder ", folder)
+        else:
+            print("unable to copy mail")
+        return 9
+    else:
+        print("wrong choice")
         return 9
